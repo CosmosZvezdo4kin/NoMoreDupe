@@ -1,6 +1,7 @@
 using HarmonyLib;
 using InventorySystem;
 using InventorySystem.Items;
+using InventorySystem.Items.ThrowableProjectiles;
 using Mirror;
 using Scp914;
 using UnityEngine;
@@ -12,6 +13,12 @@ public class Scp914ItemProcessor
 {
     private static bool Prefix(Scp914.Processors.Scp914ItemProcessor __instance, Scp914KnobSetting setting, ItemBase sourceItem, ref Scp914Result __result)
     {
+        if (sourceItem is ThrowableItem throwableItem && !throwableItem.AllowHolster)
+        {
+            __result = default;
+            return false;
+        }
+        
         var sourcePickup = sourceItem.ServerDropItem(false);
         var scp914Result = __instance.UpgradePickup(setting, sourcePickup);
         
@@ -46,7 +53,9 @@ public class Scp914ItemProcessor
             {
                 __instance.AddResultToCombiner(itemPickupBase);
                 itemPickupBase.Position = sourceItem.Owner.transform.position;
-                NetworkServer.Spawn(itemPickupBase.gameObject);
+                
+                if (!NetworkServer.spawned.ContainsKey(itemPickupBase.netId))
+                    NetworkServer.Spawn(itemPickupBase.gameObject);
             }
         }
         
